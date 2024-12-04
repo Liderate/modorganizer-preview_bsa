@@ -6,19 +6,20 @@
 #include <QLineEdit>
 #include <QModelIndex>
 #include <QVariant>
+#include <bsatk.h>
 #include <filterwidget.h>
 
-using namespace MOBase;
+#include "simplefiletreeitem.h"
 
-class SimpleFileTreeItem;
+using namespace MOBase;
 
 class SimpleFileTreeModel : public QAbstractItemModel
 {
   Q_OBJECT
 
 public:
-  explicit SimpleFileTreeModel(const QStringList& data, QObject* parent = nullptr);
-  ~SimpleFileTreeModel();
+  explicit SimpleFileTreeModel(const BSA::Folder::Ptr root, QObject* parent = nullptr);
+  ~SimpleFileTreeModel() override = default;
 
   void setFilterWidgetList(QAbstractItemView* list) { m_FilterWidget.setList(list); }
   void setFilterWidgetEdit(QLineEdit* edit) { m_FilterWidget.setEdit(edit); }
@@ -34,11 +35,7 @@ public:
   int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
 private:
-  // takes a list of relative file paths assumed with the same base folder and generates
-  // the filetree model
-  void setupModelData(const QStringList& lines, SimpleFileTreeItem* parent);
-  const int m_ColumnCount = 1;
-  SimpleFileTreeItem* m_RootItem;
+  std::unique_ptr<SimpleFileTreeItem> m_RootItem;
   FilterWidget m_FilterWidget;
   QIcon m_FileIcon;
   QIcon m_FolderIcon;

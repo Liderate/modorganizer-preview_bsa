@@ -20,6 +20,7 @@ along with Bsa Preview plugin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "previewbsa.h"
 #include "simplefiletreemodel.h"
+#include <QAbstractItemModelTester>
 #include <QApplication>
 #include <QFileInfo>
 #include <QImageReader>
@@ -45,8 +46,7 @@ bool PreviewBsa::init(IOrganizer* moInfo)
 {
   m_MOInfo = moInfo;
 
-  auto bsaPreview = std::bind(&PreviewBsa::genBsaPreview, this, std::placeholders::_1,
-                              std::placeholders::_2);
+  auto bsaPreview = std::bind_front(&PreviewBsa::genBsaPreview, this);
 
   m_PreviewGenerators["bsa"] = bsaPreview;
   m_PreviewGenerators["ba2"] = bsaPreview;
@@ -107,27 +107,10 @@ QWidget* PreviewBsa::genFilePreview(const QString& fileName, const QSize& maxSiz
   }
 }
 
-void PreviewBsa::readFiles(const BSA::Folder::Ptr archiveFolder)
-{
-  const auto fileCount = archiveFolder->getNumFiles();
-  for (unsigned int i = 0; i < fileCount; ++i) {
-    const BSA::File::Ptr file = archiveFolder->getFile(i);
-
-    m_Files << QString::fromStdString(file->getFilePath());
-  }
-
-  // recurse into subdirectories
-  const auto dirCount = archiveFolder->getNumSubFolders();
-  for (unsigned int i = 0; i < dirCount; ++i) {
-    const BSA::Folder::Ptr folder = archiveFolder->getSubFolder(i);
-
-    readFiles(folder);
-  }
-}
-
 QWidget* PreviewBsa::genBsaPreview(const QString& fileName, const QSize&)
 {
-  m_Files.clear();
+  MOBase::TimeThis tt("genBsaPreview():");
+
   QWidget* wrapper    = new QWidget();
   QVBoxLayout* layout = new QVBoxLayout();
 
@@ -142,7 +125,6 @@ QWidget* PreviewBsa::genBsaPreview(const QString& fileName, const QSize&)
     return wrapper;
   }
   const BSA::Folder::Ptr archiveDir = arch.getRoot();
-  readFiles(archiveDir);
   QString infoString =
       tr("Archive Format: %1 , Compression: %2 , File count: %3 , Version: %4 , "
          "Archive type: %5 , Archive flags: %6");
@@ -150,7 +132,7 @@ QWidget* PreviewBsa::genBsaPreview(const QString& fileName, const QSize&)
   //    "Archive type: %5 , Archive flags: %6 , Contents flags: %7");
   infoString = infoString.arg(getFormat(arch.getType()))
                    .arg((arch.getFlags() & 0x00000004) ? tr("yes") : tr("no"))
-                   .arg(m_Files.size())
+                   .arg(archiveDir->countFiles())
                    .arg(getVersion(arch.getType()))
                    .arg(arch.getType())
                    .arg("0x" + QString::number(arch.getFlags(), 16));
@@ -159,7 +141,11 @@ QWidget* PreviewBsa::genBsaPreview(const QString& fileName, const QSize&)
   layout->addWidget(infoLabel);
 
   QTreeView* view            = new QTreeView();
-  SimpleFileTreeModel* model = new SimpleFileTreeModel(m_Files, view);
+  SimpleFileTreeModel* model = new SimpleFileTreeModel(archiveDir);
+  model->setParent(view);
+
+  auto tester = new QAbstractItemModelTester(
+      model, QAbstractItemModelTester::FailureReportingMode::Warning);
 
   view->setModel(model);
   layout->addWidget(view);

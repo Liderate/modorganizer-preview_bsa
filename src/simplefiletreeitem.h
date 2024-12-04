@@ -4,28 +4,35 @@
 #include <QVariant>
 #include <QVector>
 
+#include <bsatk.h>
+
 class SimpleFileTreeItem
 {
 public:
-  explicit SimpleFileTreeItem(const QVector<QVariant>& data,
+  explicit SimpleFileTreeItem(const BSA::Folder::Ptr folder,
                               SimpleFileTreeItem* parentItem = nullptr);
-  ~SimpleFileTreeItem();
 
-  void appendChild(const QString& name, SimpleFileTreeItem* child);
+  explicit SimpleFileTreeItem(const BSA::File::Ptr file,
+                              SimpleFileTreeItem* parentItem = nullptr);
+
+  void appendChild(std::unique_ptr<SimpleFileTreeItem>&& child);
 
   SimpleFileTreeItem* child(int row);
-  SimpleFileTreeItem* childByName(const QString& name);
-  QVector<SimpleFileTreeItem*> children();
   int childCount() const;
   int columnCount() const;
   QVariant data(int column) const;
   int row() const;
-  SimpleFileTreeItem* parentItem();
+  SimpleFileTreeItem* parentItem() const { return m_parentItem; };
 
 private:
-  QVector<SimpleFileTreeItem*> m_childItems;
-  QHash<QString, SimpleFileTreeItem*> m_childItemsByName;
-  QVector<QVariant> m_itemData;
+  void populateChildren();
+
+private:
+  BSA::Folder::Ptr m_folder = nullptr;
+  BSA::File::Ptr m_file     = nullptr;
+  std::string m_name;
+
+  std::vector<std::unique_ptr<SimpleFileTreeItem>> m_childItems;
   SimpleFileTreeItem* m_parentItem;
 };
 

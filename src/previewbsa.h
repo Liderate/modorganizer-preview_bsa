@@ -27,7 +27,6 @@ along with bsa Preview plugin.  If not, see <http://www.gnu.org/licenses/>.
 
 class PreviewBsa : public MOBase::IPluginPreview
 {
-
   Q_OBJECT
   Q_INTERFACES(MOBase::IPlugin MOBase::IPluginPreview)
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -51,7 +50,6 @@ public:
   virtual QWidget* genFilePreview(const QString& fileName, const QSize& maxSize) const;
 
 private:
-  void readFiles(const BSA::Folder::Ptr folder);
   QWidget* genBsaPreview(const QString& fileName, const QSize& maxSize);
   QString getFormat(ArchiveType type) const;
   BSAULong getVersion(ArchiveType type) const;
@@ -62,7 +60,6 @@ private:
 
 private:
   const MOBase::IOrganizer* m_MOInfo;
-  QStringList m_Files;
 };
 
 #endif  // PREVIEWBSA_H
